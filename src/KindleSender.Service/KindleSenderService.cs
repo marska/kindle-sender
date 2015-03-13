@@ -1,48 +1,48 @@
 ﻿using System.Diagnostics;
 using System.ServiceProcess;
+using log4net;
 
 namespace KindleSender.Service
 {
   public partial class KindleSenderService : ServiceBase
   {
+    private static readonly ILog Log = LogManager.GetLogger(typeof(KindleSenderService));
+  
     private IFolderWatcher _folderWatcher;
 
-    private readonly IEventLogger _eventLogger;
     public KindleSenderService()
     {
-      _eventLogger = new EventLogger();
-
-      _eventLogger.Write("Initializing Kindle Sender Service.", EventLogEntryType.Information);
+      Log.Info("Initializing Kindle Sender Service.");
 
       InitializeComponent();
 
       InitializeService();
 
-      _eventLogger.Write("Initialized Kindle Sender Service.", EventLogEntryType.Information);
+      Log.Info("Initialized Kindle Sender Service.");
     }
 
     protected override void OnStart(string[] args)
     {
       _folderWatcher.Start();
 
-      _eventLogger.Write("Kindle Sender Service started.", EventLogEntryType.Information);
+      Log.Info("Kindle Sender Service started.");
     }
 
     protected override void OnStop()
     {
       _folderWatcher.Stop();
 
-      _eventLogger.Write("Kindle Sender Service stoped.", EventLogEntryType.Information);
+      Log.Info("Kindle Sender Service stoped.");
     }
 
     private void InitializeService()
     {
-      var configuration = new Configuration(_eventLogger);
+      var configuration = new Configuration();
       configuration.Load();
 
-      var fileSender = new FileSender(configuration, _eventLogger);
+      var fileSender = new FileSender(configuration);
 
-      _folderWatcher = new FolderWatcher(configuration, fileSender, _eventLogger);
+      _folderWatcher = new FolderWatcher(configuration, fileSender);
     }
   }
 }

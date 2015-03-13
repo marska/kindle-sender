@@ -1,22 +1,12 @@
 ﻿using System;
 using System.Configuration;
-using System.Diagnostics;
+using log4net;
 
 namespace KindleSender.Service
 {
   public class Configuration : IConfiguration
   {
-    private readonly IEventLogger _eventLogger;
-
-    public Configuration(IEventLogger eventLogger)
-    {
-      if (eventLogger == null)
-      {
-        throw new ArgumentNullException("eventLogger");
-      }
-
-      _eventLogger = eventLogger;
-    }
+    private static readonly ILog Log = LogManager.GetLogger(typeof(FolderWatcher));
 
     public string FolderPath { get; set; }
 
@@ -35,7 +25,7 @@ namespace KindleSender.Service
 
     public void Load()
     {
-      _eventLogger.Write("Loading configuration ... ", EventLogEntryType.Information);
+      Log.Info("Loading configuration ... ");
 
       try
       {
@@ -48,11 +38,11 @@ namespace KindleSender.Service
         SmtpUserName = ConfigurationManager.AppSettings["SmtpUserName"];
         SmtpPassword = ConfigurationManager.AppSettings["SmtpPassword"];
 
-        _eventLogger.Write("Configuration loaded.", EventLogEntryType.Information);
+        Log.Info("Configuration loaded.");
       }
       catch (Exception e)
       {
-        _eventLogger.Write(e.Message, EventLogEntryType.Error);
+        Log.Error(e.Message);
       }
     }
   }

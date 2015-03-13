@@ -5,38 +5,33 @@ using System.Net.Mail;
 using System.Net.Mime;
 using System.Runtime.InteropServices;
 using System.Threading;
+using log4net;
 
 namespace KindleSender.Service
 {
   public class FileSender : IFileSender
   {
-    private readonly IConfiguration _configuration;
+    private static readonly ILog Log = LogManager.GetLogger(typeof(FolderWatcher));
 
-    private readonly IEventLogger _eventLogger;
+    private readonly IConfiguration _configuration;
 
     private const short FileReadTries = 5;
 
-    public FileSender(IConfiguration configuration, IEventLogger eventLogger)
+    public FileSender(IConfiguration configuration)
     {
       if (configuration == null)
       {
         throw new ArgumentNullException("configuration");
       }
 
-      if (eventLogger == null)
-      {
-        throw new ArgumentNullException("eventLogger");
-      }
-
       _configuration = configuration;
-      _eventLogger = eventLogger;
     }
 
     public void Send(string filePath)
     {
       var fileName = filePath.Replace(_configuration.FolderPath, string.Empty);
 
-      _eventLogger.Write(string.Format("Sending file {0} ... ", fileName), EventLogEntryType.Information);
+      Log.Info(string.Format("Sending file {0} ... ", fileName));
 
       var tryOpenFileCounter = 0;
 
@@ -44,7 +39,7 @@ namespace KindleSender.Service
       {
         if (IsFileLocked(filePath))
         {
-          _eventLogger.Write("File is locked. Try counter: " + tryOpenFileCounter, EventLogEntryType.Error);
+          Log.Error("File is locked. Try counter: " + tryOpenFileCounter);
           Thread.Sleep(5000);
         }
 
@@ -55,11 +50,11 @@ namespace KindleSender.Service
       {
         SendEmail(filePath);
 
-        _eventLogger.Write(string.Format("Sended file {0} ... ", fileName), EventLogEntryType.Information);
+        Log.Info(string.Format("Sended file {0} ... ", fileName));
       }
       catch (Exception ex)
       {
-        _eventLogger.Write(ex.Message, EventLogEntryType.Error);
+        Log.Error(ex.Message);
       }
     }
 

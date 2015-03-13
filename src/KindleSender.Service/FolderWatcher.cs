@@ -2,20 +2,21 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using log4net;
 
 namespace KindleSender.Service
 {
   public class FolderWatcher : IFolderWatcher, IDisposable
   {
+    private static readonly ILog Log = LogManager.GetLogger(typeof(FolderWatcher));
+
     private readonly IConfiguration _configuration;
 
     private readonly IFileSender _fileSender;
 
-    private readonly IEventLogger _eventLogger;
-
     private FileSystemWatcher _fileSystemWatcher;
 
-    public FolderWatcher(IConfiguration configuration, IFileSender fileSender, IEventLogger eventLogger)
+    public FolderWatcher(IConfiguration configuration, IFileSender fileSender)
     {
       if (configuration == null)
       {
@@ -27,14 +28,8 @@ namespace KindleSender.Service
         throw new ArgumentNullException("fileSender");
       }
 
-      if (eventLogger == null)
-      {
-        throw new ArgumentNullException("eventLogger");
-      }
-
       _configuration = configuration;
       _fileSender = fileSender;
-      _eventLogger = eventLogger;
 
       InitilaizeFileSystemWatcher();
     }
@@ -53,7 +48,7 @@ namespace KindleSender.Service
       if (!Directory.Exists(_configuration.FolderPath))
       {
         Directory.CreateDirectory(_configuration.FolderPath);
-        _eventLogger.Write("Created directory: " + _configuration.FolderPath, EventLogEntryType.Information);
+        Log.Info("Created directory: " + _configuration.FolderPath);
       }
 
       _fileSystemWatcher = new FileSystemWatcher
@@ -65,12 +60,12 @@ namespace KindleSender.Service
 
       _fileSystemWatcher.Created += OnFileCreated;
 
-      _eventLogger.Write("Watching folder: " + _fileSystemWatcher.Path, EventLogEntryType.Information);
+      Log.Info("Watching folder: " + _fileSystemWatcher.Path);
     }
 
     private void OnFileCreated(object sender, FileSystemEventArgs e)
     {
-      _eventLogger.Write("New file found: " + e.FullPath, EventLogEntryType.Information);
+      Log.Info("New file found: " + e.FullPath);
       _fileSender.Send(e.FullPath);
     }
 
