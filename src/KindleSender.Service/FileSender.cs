@@ -17,6 +17,8 @@ namespace KindleSender.Service
 
     private const short FileReadTries = 5;
 
+    private const int SmtpClientTimeout = 0;
+
     public FileSender(IConfiguration configuration)
     {
       if (configuration == null)
@@ -33,13 +35,13 @@ namespace KindleSender.Service
 
       Log.Info(string.Format("Sending file {0} ... ", fileName));
 
-      var tryOpenFileCounter = 0;
+      var tryOpenFileCounter = 1;
 
       do
       {
         if (IsFileLocked(filePath))
         {
-          Log.Error("File is locked. Try counter: " + tryOpenFileCounter);
+          Log.WarnFormat("File is locked. Try counter: {0}/{1}", tryOpenFileCounter, FileReadTries.ToString());
           Thread.Sleep(5000);
         }
 
@@ -60,7 +62,9 @@ namespace KindleSender.Service
 
     private void SendEmail(string filePath)
     {
-      var mail = new MailMessage(_configuration.SmtpUserName, _configuration.KindleMail);
+      var mail = new MailMessage();
+      mail.From = new MailAddress(_configuration.SmtpUserName);
+      mail.To.Add(_configuration.KindleMail);
       mail.Attachments.Add(GetAtachment(filePath));
 
       var client = new SmtpClient
@@ -69,7 +73,7 @@ namespace KindleSender.Service
         UseDefaultCredentials = false,
         Host = _configuration.SmtpServer,
         Credentials = new System.Net.NetworkCredential(_configuration.SmtpUserName, _configuration.SmtpPassword),
-        Timeout = 0
+        Timeout = SmtpClientTimeout
       };
 
       client.Send(mail);
