@@ -15,8 +15,6 @@ namespace KindleSender.Service
 
     private readonly IConfiguration _configuration;
 
-    private const short FileReadTries = 5;
-
     private const int SmtpClientTimeout = 0;
 
     public FileSender(IConfiguration configuration)
@@ -31,22 +29,19 @@ namespace KindleSender.Service
 
     public void Send(string filePath)
     {
-      var fileName = filePath.Replace(_configuration.FolderPath, string.Empty);
+      var fileName = filePath.Replace(_configuration.FolderPath, string.Empty).Replace(@"\", string.Empty);
 
       Log.Info(string.Format("Sending file {0} ... ", fileName));
 
-      var tryOpenFileCounter = 1;
+      var tryOpenFileCount = 1;
 
-      do
+      while (IsFileLocked(filePath))
       {
-        if (IsFileLocked(filePath))
-        {
-          Log.WarnFormat("File is locked. Try counter: {0}/{1}", tryOpenFileCounter, FileReadTries.ToString());
-          Thread.Sleep(5000);
-        }
+        Log.WarnFormat("File is locked. Try: {0}", tryOpenFileCount);
+        Thread.Sleep(5000);
 
-        tryOpenFileCounter++;
-      } while (tryOpenFileCounter > FileReadTries);
+        tryOpenFileCount++;
+      }
 
       try
       {
@@ -77,6 +72,9 @@ namespace KindleSender.Service
       };
 
       client.Send(mail);
+
+      mail.Dispose();
+      client.Dispose();
     }
 
     private static Attachment GetAtachment(string filePath)
