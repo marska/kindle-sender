@@ -1,3 +1,3 @@
 # kindle-sender
 
-Small Windows service to sends ebooks from specified folder to your Kindle device.
+Windows Service to send ebooks from specified folder to your Kindle device.
